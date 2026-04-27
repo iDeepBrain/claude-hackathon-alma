@@ -1,13 +1,13 @@
 # Alma — A Companion Who Reaches Out First
 
 <p align="center">
-  <a href="https://youtu.be/bMfWO-wTrHU">
+  <a href="https://youtu.be/YKxDqg_PpeI">
     <img src="assets/youtube_view.png" alt="Watch Alma — 1 minute demo on YouTube" width="100%">
   </a>
 </p>
 
 <p align="center">
-  <a href="https://youtu.be/bMfWO-wTrHU"><strong>▶ Watch the 1-minute demo on YouTube</strong></a>
+  <a href="https://youtu.be/YKxDqg_PpeI"><strong>▶ Watch the 1-minute demo on YouTube</strong></a>
 </p>
 
 ---
@@ -104,7 +104,7 @@ docker compose up --build -d
 </p>
 
 <p align="center">
-  <a href="https://youtu.be/bMfWO-wTrHU">▶ Watch the demo</a> ·
+  <a href="https://youtu.be/YKxDqg_PpeI">▶ Watch the demo</a> ·
   <a href="DOCUMENTATION.md">📚 Documentation</a> ·
   <a href="https://github.com/iDeepBrain/claude-hackathon-infra">🚀 Source code</a>
 </p>
