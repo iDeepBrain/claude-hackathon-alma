@@ -90,7 +90,9 @@ For full technical depth — architecture, MCP server, memory system, crisis det
 
 Direct links to specific topics:
 - [Architecture](docs/technical/architecture.md)
+- [Deployment — GCP Cloud Run + alma-bot.com](docs/technical/deployment.md) 🆕
 - [MCP Server & Memory](docs/technical/mcp-server.md)
+- [Memory System (Postgres + pgvector)](docs/technical/memory-system.md)
 - [Proactivity System](docs/technical/proactivity.md)
 - [Crisis Detection](docs/technical/crisis-detection.md)
 - [Multi-Agent Methodology](docs/process/multi-agent-methodology.md)

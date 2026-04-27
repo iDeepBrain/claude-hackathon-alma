@@ -17,15 +17,47 @@ APScheduler runs inside the agent service and fires three jobs per day (Lima tim
 | Dinner | 19:30 | "¿Ya cenaste? 🌙 ¿Hiciste algo de movimiento hoy?" |
 | Crisis follow-up | Immediate | Sent after crisis detection; checks in 1h later |
 
-## APScheduler Configuration
+## Two scheduling modes — APScheduler (local) vs Cloud Scheduler (prod)
 
-The agent runs APScheduler with `AsyncIOScheduler` (in-process, same event loop as FastAPI):
+Alma supports two scheduling backends, controlled by `SCHEDULER_ENABLED`:
+
+### Local: APScheduler (in-process)
+
+When `SCHEDULER_ENABLED=true` (default in the local Docker stack), the agent runs `AsyncIOScheduler` inside the FastAPI process:
 
 - `Job: proactive_breakfast` — cron: hour=8, minute=30, tz=America/Lima
 - `Job: proactive_lunch` — cron: hour=13, minute=30, tz=America/Lima
 - `Job: proactive_dinner` — cron: hour=19, minute=30, tz=America/Lima
 
-Proactivity is enabled/disabled via `SCHEDULER_ENABLED=true/false` env var.
+Each job calls `send_proactive(slot, redis_client)` directly — no HTTP roundtrip.
+
+### Production: Cloud Scheduler → HTTP endpoints
+
+When `SCHEDULER_ENABLED=false` (default in Cloud Run), the in-process scheduler is disabled. Instead, **Google Cloud Scheduler** fires HTTP POSTs to the agent at the same times:
+
+```
+Cloud Scheduler                          alma-agent (Cloud Run)
+─────────────────                        ──────────────────────
+alma-proactive-breakfast (08:30)  ───>   POST /cron/proactive/breakfast
+alma-proactive-lunch     (13:30)  ───>   POST /cron/proactive/lunch
+alma-proactive-dinner    (19:30)  ───>   POST /cron/proactive/dinner
+                                         Header: X-Cloud-Scheduler-Token: <secret>
+```
+
+The endpoint (`app/api/cron.py`) reads `CRON_TOKEN` from env and rejects requests with the wrong token (401). Once authorized, it calls the same `send_proactive()` function used by APScheduler — only the trigger differs.
+
+### Why Cloud Scheduler in production
+
+APScheduler running inside a multi-replica Cloud Run deployment would fire **N times** per slot (one per replica). Cloud Scheduler fires **exactly once**, regardless of how many agent replicas exist:
+
+| Concern | APScheduler | Cloud Scheduler |
+|---------|-------------|-----------------|
+| Duplicate fires across replicas | Yes (one scheduler per replica) | No (one global trigger) |
+| Survives container restarts | Loses pending jobs in memory | Persisted by Google |
+| Observability | Stdout logs only | Cloud Logging + retry/dead-letter UI |
+| Handles autoscaling | Breaks (scheduler runs in every replica) | Trigger is independent of replicas |
+
+Both backends share the **same Redis idempotence keys** plus the `alma_proactive_log` Postgres table (UNIQUE on `user_id, slot, date_lima`), so even an accidental dev/prod overlap can't double-send.
 
 ## Redis Key Patterns
 
