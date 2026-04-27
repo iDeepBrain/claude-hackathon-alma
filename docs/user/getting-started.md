@@ -1,5 +1,9 @@
 # Getting Started with Alma
 
+> ## 🌸 Try Alma now → [https://alma-bot.com](https://alma-bot.com)
+>
+> Live demo, no signup, bilingual ES/EN. Running on Google Cloud Run.
+
 ## What is Alma?
 
 Alma is your AI companion for emotional wellness. She listens, remembers your story, and checks in when you go quiet. She's available on Telegram and on the web.
@@ -31,7 +35,7 @@ Alma is not a therapist and does not replace professional mental health care. Sh
 
 ## Using Alma on Web
 
-1. Open `http://localhost:3000` in your browser
+1. Open **[https://alma-bot.com](https://alma-bot.com)** (or `http://localhost:3000` if running locally)
 2. A unique ID is created automatically — your conversations are private
 3. Type in the chat box and press Enter
 4. Watch the memory panel on the right — it updates as Alma learns about you
