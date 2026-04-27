@@ -1,207 +1,96 @@
-# Alma — Emotional AI Companion
+# Alma — A Companion Who Reaches Out First
 
-Alma is an empathetic AI companion for mental health support in Latin America. Built on **Claude Opus 4.7**, she remembers your life, learns your patterns, and — critically — reaches out first when you go quiet. Because people living with depression often can't make the first move.
+<p align="center">
+  <a href="https://youtu.be/bMfWO-wTrHU">
+    <img src="assets/youtube_view.png" alt="Watch Alma — 1 minute demo on YouTube" width="100%">
+  </a>
+</p>
 
-> **Latin America has 1.6 psychiatrists per 100,000 people.** Most who need help never access it — not because they don't want it, but because reaching out at your lowest is the hardest thing to do. Alma inverts this: she checks in three times a day, every day.
-
----
-
-## Table of Contents
-
-- [Claude Opus 4.7 Integration](#claude-opus-4-7-integration)
-- [MCP Server — Alma's Memory](#mcp-server--almas-memory)
-- [Proactivity — Alma Reaches Out First](#proactivity--alma-reaches-out-first)
-- [Multi-Agent Development Methodology](#multi-agent-development-methodology)
-- [Architecture](#architecture)
-- [Documentation](#documentation)
-- [Quick Start](#quick-start)
-- [Repository Map](#repository-map)
+<p align="center">
+  <a href="https://youtu.be/bMfWO-wTrHU"><strong>▶ Watch the 1-minute demo on YouTube</strong></a>
+</p>
 
 ---
 
-## Claude Opus 4.7 Integration
+## The Number That Started Everything
 
-Alma's conversation engine is **AlmaChain** — a LangChain LCEL pipeline wrapping Claude with memory injection, semantic caching, safety guards, and dynamic model routing.
+**1.6 psychiatrists per 100,000 people** in Latin America. In Peru — outside Lima — that number drops even lower.
 
-### Pipeline
+The people who need help the most... never ask for it. Not because they don't want help. Because asking, when you're at your lowest, is impossible.
 
-```
-1. is_injection(message)           → block prompt injection attempts
-2. semantic_cache.lookup(message)  → rapidfuzz WRatio>88, then cosine>0.92
-3. mcp_client.build_context(uid)   → inject 4-layer memory into system prompt
-4. router.select_model(state)      → choose Haiku / Sonnet / Opus
-5. llm.astream(messages)           → SSE streaming via Anthropic Python SDK
-6. asyncio.create_task(post_work)  → non-blocking: crisis eval, memory upsert, cache
-```
+Every existing mental health app waits for the user to open it first. That single design assumption excludes the people who need help the most.
 
-### Dynamic Model Routing
-
-| Condition | Model | Reason |
-|-----------|-------|--------|
-| `crisis_score > 0.7` | `claude-opus-4-7` | Most capable for high-stakes conversations |
-| `has_image` | `claude-haiku-4-5` | Vision support, cost-efficient |
-| `len(message) > 800` | `claude-sonnet-4-6` | Long-form comprehension |
-| default | `claude-haiku-4-5` | Fast, low-latency for daily chat |
-
-### Semantic Cache
-
-Two-stage deduplication prevents redundant Claude calls:
-1. **Fuzzy match** — `rapidfuzz.WRatio > 88` (near-identical phrasing)
-2. **Cosine similarity** — embedding distance `> 0.92` (semantically equivalent)
-
-Cache lives in Redis with 1h TTL. Embeddings via `fastembed` + ONNX (local).
-
-> **Deep dive:** [Architecture — AlmaChain Pipeline](docs/technical/architecture.md)
+**Alma exists to break that assumption.**
 
 ---
 
-## MCP Server — Alma's Memory
+## María's Morning
 
-Alma remembers. Every conversation enriches a persistent memory that is injected into Claude's system prompt on every turn.
+Six thirty AM in Lima. María is twenty-three. Another hard day she told no one about. Her phone is silent on the nightstand. The room is still dark.
 
-### 5 MCP Tools
+And then — it lights up.
 
-| Tool | Description |
-|------|-------------|
-| `get_memory` | Retrieve all 4 memory layers for a user |
-| `upsert_memory` | Write or update a memory entry (idempotent by `entry_key`) |
-| `search_memory` | Semantic search across all layers (cosine, threshold 0.5) |
-| `build_context` | Generate markdown for system prompt injection |
-| `evaluate_crisis_risk` | Deterministic crisis score 0-1 (no LLM) |
+> ### *"¿Ya desayunaste? ☀️"*
 
-### 4-Layer Memory
+That's Alma. She wasn't asked. She wasn't summoned. She noticed.
 
-| Layer | Stores |
-|-------|--------|
-| `mood_history` | Emotional state + numeric score per day |
-| `mentioned_events` | Life events: description, resolved flag, emotional weight |
-| `habits` | Behavioral patterns: sleep, exercise, eating, social |
-| `interaction_prefs` | Communication style preferences |
+For the first time in days, María smiles.
 
-**Storage:** SQLite (`alma.db`) + fastembed ONNX (`all-MiniLM-L6-v2`) — local inference, no external API calls.
-
-> **Deep dive:** [MCP Server](docs/technical/mcp-server.md) · [Memory System](docs/technical/memory-system.md) · [Crisis Detection](docs/technical/crisis-detection.md)
+**Someone reached out before she had to.**
 
 ---
 
-## Proactivity — Alma Reaches Out First
+## What Alma Is
 
-This is Alma's defining feature. Most mental health apps wait. Alma doesn't.
+A proactive AI emotional companion — built on **Claude Opus 4.7** and **Haiku 4.5**, with intelligent model routing.
 
-### 3 Daily Check-Ins
+### Three pillars make Alma different
 
-| Slot | Time (Lima UTC-5) | Message |
-|------|-------------------|---------|
-| Breakfast | 08:30 | "¿Ya desayunaste? ☀️ Un buen comienzo importa" |
-| Lunch | 13:30 | "¿Ya almorzaste? 🌞 ¿Cómo va tu día?" |
-| Dinner | 19:30 | "¿Ya cenaste? 🌙 ¿Hiciste algo de movimiento hoy?" |
+1. **Persistent memory** — She remembers across days, across weeks. The interview last Monday. The night you couldn't sleep. The conflict you mentioned three days ago shapes today's response.
 
-### Safety Gates
+2. **Deterministic crisis detection** — Safety logic, not LLM guesses. The crisis layer is keyword-based, scored 0–1, and cannot hallucinate. Two separate concerns: deterministic safety, LLM response quality.
 
-| Gate | Logic | Why |
-|------|-------|-----|
-| Crisis gate | `crisis_score > 0.6` → skip | Don't interrupt someone in distress |
-| Silence gate | Active in last 2h → skip | Already engaged |
-| Slot gate | Already sent today → skip | No double messages |
+3. **True proactivity** — Three daily check-ins, sent before users ever have to ask. Breakfast. Lunch. Dinner. Lima time.
 
-Delivered via **APScheduler** (inside agent) + **httpx** direct to Telegram Bot API.
-
-> **Deep dive:** [Proactivity System](docs/technical/proactivity.md) · [Proactivity Flow Diagram](diagrams/05-proactivity-flow.md)
+Available on **Telegram**. Available on the **web**. Bilingual. Always present.
 
 ---
 
-## Multi-Agent Development Methodology
+## The Bet
 
-Before a single line of production code was written, **12 specialized Claude Code agents** debated the system design in 2 rounds (10+ cycles each).
+Most apps wait for you to open them.
 
-### The 12 Agents
+**Alma takes the first step instead.**
 
-| Agent | Role |
-|-------|------|
-| `ai-tech-lead` | Architecture decisions, go/no-go gates |
-| `senior-mle-engineer` | ML pipeline, model selection |
-| `senior-fullstack-engineer` | API design, SSE, nginx |
-| `fullstack-lead` | Repo structure, Docker Compose |
-| `junior-mle-engineer` | Fresh perspectives, challenges |
-| `junior-fullstack-dev` | Browser APIs, modern patterns |
-| `ui-ux-designer` | Emotional UX, demo flow |
-| `delivery-lead-agile` | Prioritization, risk management |
-| `emotional-companion` | Safety principles for proactive messaging |
-| `psiquiatria-informativa` | Clinical ethics for mental health AI |
-| `stakeholder-arthur` | Non-technical user perspective |
-| `stakeholder-maria-usuario` | Non-technical user perspective (LatAm) |
+Because the people who need help the most... are never the ones who ask first.
 
-### Key Decisions from Debate
-
-- **nginx trailing slash bug caught before deployment** — would have caused 404 on every request
-- **Audio strategy reversed** — from Docker ONNX models (143GB VM crash) to browser-native Web Speech API
-- **"Silence as self-regulation"** — crisis gate added to suppress proactive messages during distress
-
-> **Deep dive:** [Multi-Agent Methodology](docs/process/multi-agent-methodology.md) · [Claude Code Skills](docs/process/claude-code-skills.md)
+> ### *Alma. Built for them.*
 
 ---
 
-## Architecture
+## 📚 Technical Documentation
 
-```
-Browser → nginx:3000 → /api/* → agent:8000 → redis:6379
-                                            → mcp:8001 → SQLite
-Telegram → telegram-bot → agent:8000
-APScheduler (inside agent) → httpx → api.telegram.org
-```
+For full technical depth — architecture, MCP server, memory system, crisis detection, multi-agent methodology, and 10 architecture diagrams:
 
-| Service | Image | Role |
-|---------|-------|------|
-| `redis` | redis:7-alpine | Sessions, semantic cache, proactivity keys |
-| `mcp` | custom | FastMCP server, SQLite, fastembed ONNX |
-| `agent` | custom | FastAPI, AlmaChain, APScheduler |
-| `telegram-bot` | custom | Telegram polling, chat_id registration |
-| `web` | nginx:1.25-alpine | Static files + `/api/*` reverse proxy |
+> **[→ Read DOCUMENTATION.md](DOCUMENTATION.md)**
 
-> **Deep dive:** [Architecture](docs/technical/architecture.md) · [All 10 diagrams](diagrams/README.md)
+Direct links to specific topics:
+- [Architecture](docs/technical/architecture.md)
+- [MCP Server & Memory](docs/technical/mcp-server.md)
+- [Proactivity System](docs/technical/proactivity.md)
+- [Crisis Detection](docs/technical/crisis-detection.md)
+- [Multi-Agent Methodology](docs/process/multi-agent-methodology.md)
+- [10 Architecture Diagrams](diagrams/README.md)
 
 ---
 
-## Documentation
-
-### Technical
-
-| Document | What it covers |
-|----------|---------------|
-| [Architecture](docs/technical/architecture.md) | 5-service system, request flows, env vars, security |
-| [MCP Server](docs/technical/mcp-server.md) | 5 tools, 4-layer memory, SQLite schema, embeddings |
-| [Memory System](docs/technical/memory-system.md) | Memory write/read flows, semantic search |
-| [Crisis Detection](docs/technical/crisis-detection.md) | Deterministic scoring, escalation path, proactivity gate |
-| [Proactivity](docs/technical/proactivity.md) | APScheduler, Redis keys, safety gates, delivery |
-
-### For Users
-
-| Document | What it covers |
-|----------|---------------|
-| [Getting Started](docs/user/getting-started.md) | How to use Alma on Telegram and web |
-| [Privacy](docs/user/privacy.md) | What Alma stores, retention, deletion |
-
-### Development Process
-
-| Document | What it covers |
-|----------|---------------|
-| [Multi-Agent Methodology](docs/process/multi-agent-methodology.md) | 12 agents, 2 rounds, concrete debate outcomes |
-| [Claude Code Skills](docs/process/claude-code-skills.md) | Skills, hooks, CLAUDE.md infrastructure |
-
-### Architecture Diagrams
-
-[10 Mermaid diagrams](diagrams/README.md) covering every component and flow.
-
----
-
-## Quick Start
+## 🚀 Quick Start
 
 ```bash
 git clone https://github.com/iDeepBrain/claude-hackathon-infra
 cd claude-hackathon-infra
 cp .env.example .env          # fill in ANTHROPIC_API_KEY and TELEGRAM_BOT_TOKEN
 docker compose up --build -d
-docker ps                     # should show 5 containers
 ```
 
 - Web chat: `http://localhost:3000`
@@ -209,15 +98,13 @@ docker ps                     # should show 5 containers
 
 ---
 
-## Repository Map
+<p align="center">
+  <strong>Built for the Anthropic Claude Opus 4.7 Hackathon · 2026</strong><br>
+  <em>For the people who never ask first.</em>
+</p>
 
-| Repository | Role | Runtime |
-|-----------|------|---------|
-| [`claude-hackathon-infra`](https://github.com/iDeepBrain/claude-hackathon-infra) | Docker Compose orchestrator (5 services) | Start here |
-| [`claude-hackathon-agent`](https://github.com/iDeepBrain/claude-hackathon-agent) | FastAPI + AlmaChain + APScheduler | `agent` service |
-| [`claude-hackathon-mcp`](https://github.com/iDeepBrain/claude-hackathon-mcp) | FastMCP memory server (SQLite + embeddings) | `mcp` service |
-| [`claude-hackathon-telegram`](https://github.com/iDeepBrain/claude-hackathon-telegram) | Telegram bot (polling) | `telegram-bot` service |
-| [`claude-hackathon-web`](https://github.com/iDeepBrain/claude-hackathon-web) | Frontend HTML/JS + nginx | `web` service |
-| [`claude-hackathon-alma`](https://github.com/iDeepBrain/claude-hackathon-alma) | Public documentation (this repo) | Docs only |
-| [`claude-hackathon-experiments`](https://github.com/iDeepBrain/claude-hackathon-experiments) | STT/TTS research (5.9 GB) | Local only |
-| [`claude-hackathon-planning`](https://github.com/iDeepBrain/claude-hackathon-planning) | Sprints, kanban | Local only |
+<p align="center">
+  <a href="https://youtu.be/bMfWO-wTrHU">▶ Watch the demo</a> ·
+  <a href="DOCUMENTATION.md">📚 Documentation</a> ·
+  <a href="https://github.com/iDeepBrain/claude-hackathon-infra">🚀 Source code</a>
+</p>
