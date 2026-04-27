@@ -10,6 +10,20 @@
   <a href="https://youtu.be/YKxDqg_PpeI"><strong>▶ Watch the 1-minute demo on YouTube</strong></a>
 </p>
 
+<p align="center">
+  <a href="https://alma-web-dev-630531001367.us-central1.run.app/">
+    <img src="https://img.shields.io/badge/🌸_Try_Alma_Live-Open_the_demo-9d6b53?style=for-the-badge&labelColor=2b1f1c" alt="Try Alma live" height="48">
+  </a>
+</p>
+
+<h2 align="center">
+  <a href="https://alma-web-dev-630531001367.us-central1.run.app/">→ alma-web-dev-630531001367.us-central1.run.app ←</a>
+</h2>
+
+<p align="center">
+  <em>Live on Google Cloud Run · Bilingual ES/EN · No signup required</em>
+</p>
+
 ---
 
 ## The Number That Started Everything
