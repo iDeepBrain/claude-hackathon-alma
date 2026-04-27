@@ -1,8 +1,17 @@
 # Architecture
 
+> **Live:** [https://alma-bot.com](https://alma-bot.com) · See **[Deployment](deployment.md)** for Cloud Run, custom domain, secrets, and Cloud Scheduler.
+
 ## Overview
 
-Alma is a 5-service system orchestrated by a single Docker Compose file in `claude-hackathon-infra`. All services communicate over a private Docker bridge network. The only externally exposed ports are `3000` (nginx, web chat) and `8080` (agent API, for development access). IPv6 is disabled on the network — see Critical Implementation Notes.
+Alma runs in two environments that share the same code and the same managed backing services:
+
+| Environment | Web URL | Agent | MCP | Postgres | Redis | Scheduler |
+|-------------|---------|-------|-----|----------|-------|-----------|
+| **Local** | `localhost:3000` | container | container | `pgvector/pg16` container (port 5433) | `redis:7-alpine` container | APScheduler in-process |
+| **Cloud (dev)** | [alma-bot.com](https://alma-bot.com) | Cloud Run | Cloud Run | Supabase Postgres + pgvector | Upstash Redis (TLS) | Cloud Scheduler → HTTP |
+
+Locally, all 6 services (web, agent, mcp, postgres, redis, telegram-bot) run as Docker containers on a private bridge network (IPv6 disabled). In Cloud Run, each service is a separate managed service; persistent state lives in Supabase + Upstash. The application code is identical — only env vars (`DATABASE_URL`, `REDIS_URL`, `MCP_URL`, `SCHEDULER_ENABLED`) change.
 
 ---
 
@@ -10,7 +19,7 @@ Alma is a 5-service system orchestrated by a single Docker Compose file in `clau
 
 ```
 ┌─────────────────────────────────────────────────────────────────────┐
-│                        Docker Network: alma-net                     │
+│              Docker Network: hackathon (local dev)                   │
 │                                                                     │
 │  Browser ──HTTP/SSE──► nginx:3000                                   │
 │                            │                                        │
@@ -23,17 +32,24 @@ Alma is a 5-service system orchestrated by a single Docker Compose file in `clau
 │                            │         agent:8000               │    │
 │                            │   FastAPI + AlmaChain            │    │
 │                            │   APScheduler (proactivity)      │    │
+│                            │   /cron/proactive/{slot}  ← HTTP │    │
 │                            └──┬──────────────────────┬────────┘    │
 │                               │                      │             │
 │                          redis:6379             mcp:8001           │
-│                        (sessions,           (FastMCP server,       │
-│                         cache,              SQLite,                │
-│                         proactivity         fastembed ONNX)        │
-│                         keys)                                       │
-│                                                                     │
+│                        (sessions,           (FastMCP, fastembed)   │
+│                         cache,                       │             │
+│                         proactivity)                 ▼             │
+│                                              postgres:5432         │
+│                                          (pgvector/pg16,           │
+│                                           5 alma_* tables,         │
+│                                           HNSW vector index)        │
 └─────────────────────────────────────────────────────────────────────┘
 
 APScheduler (inside agent) ──httpx──► api.telegram.org (external)
+
+In Cloud Run, the local postgres+redis containers become Supabase + Upstash,
+and APScheduler is replaced by Cloud Scheduler hitting /cron/proactive/{slot}
+via HTTP. See deployment.md for the full Cloud Run topology.
 ```
 
 ---
