@@ -100,6 +100,12 @@ Direct links to specific topics:
 
 ## 🚀 Quick Start
 
+### Try it live (no install)
+
+> **🌸 https://alma-bot.com** — open the demo, chat with Alma in Spanish or English. No signup required.
+
+### Or run it locally
+
 ```bash
 git clone https://github.com/iDeepBrain/claude-hackathon-infra
 cd claude-hackathon-infra
