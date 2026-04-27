@@ -11,13 +11,13 @@
 </p>
 
 <p align="center">
-  <a href="https://alma-web-dev-630531001367.us-central1.run.app/">
-    <img src="https://img.shields.io/badge/🌸_Try_Alma_Live-Open_the_demo-9d6b53?style=for-the-badge&labelColor=2b1f1c" alt="Try Alma live" height="48">
+  <a href="https://alma-bot.com/">
+    <img src="https://img.shields.io/badge/🌸_Try_Alma_Live-alma--bot.com-9d6b53?style=for-the-badge&labelColor=2b1f1c" alt="Try Alma live" height="48">
   </a>
 </p>
 
 <h2 align="center">
-  <a href="https://alma-web-dev-630531001367.us-central1.run.app/">→ alma-web-dev-630531001367.us-central1.run.app ←</a>
+  <a href="https://alma-bot.com/">→ alma-bot.com ←</a>
 </h2>
 
 <p align="center">
