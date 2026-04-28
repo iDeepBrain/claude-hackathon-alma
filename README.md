@@ -82,6 +82,61 @@ Because the people who need help the most... are never the ones who ask first.
 
 ---
 
+## Why Claude Opus 4.7 Specifically
+
+| Capability | How Alma uses it | What breaks without it |
+|---|---|---|
+| **Extended thinking** | Empathic reasoning before generation — Alma considers the user's emotional history, the time of day, and prior conversation arcs before composing a reply. | The reply collapses into generic "I'm here for you" boilerplate instead of a response that draws on what the user has actually shared. |
+| **Multi-turn tool use** | AlmaChain calls `evaluate_crisis_risk_tool` and `search_memory_tool` in the same turn, then composes a response. The chain is non-trivial — the crisis check informs whether to retrieve memory at all, and which memory layers to weight. | The pipeline collapses into either a memoryless reply or a memory-without-safety reply. Either is unacceptable in a mental-health context. |
+| **Prompt caching** (`cache_control: ephemeral`) | The system prompt and the four-layer memory schema are stable across turns. Caching them turns each follow-up into a cheap input — the marginal cost of a long conversation drops by 60%+. | Long conversations would either be financially prohibitive or aggressively truncated, severing the context that mental-health continuity depends on. |
+| **1M-token context window** | Full conversation history is available without summarization. A user mentioning a job interview three weeks ago can have it referenced by name today. | Summarization across weeks loses the specific details (the interviewer's name, the role, the day) that make recall feel human, not robotic. |
+| **Haiku 4.5 routing** | Cheap turns (acknowledgments, low-stakes follow-ups) are routed to Haiku; emotionally loaded turns to Opus 4.7. The router is explicit code, not a prompt instruction. | The system either becomes too expensive to operate at scale or too shallow to hold a real conversation. |
+
+---
+
+## Why it's interesting
+
+These are the engineering decisions that distinguish Alma from a generic chat wrapper. Each is defended in [`docs/evolution.md`](docs/evolution.md).
+
+- **Crisis detection is deterministic, not LLM-based.** Keyword scoring with explicit thresholds, identical on every run. In a system that mediates self-harm signals, predictability beats nuance. The same `evaluate_crisis_risk_tool` is called by two integration points (the chain after each turn, the scheduler before each proactive message) — one implementation, two callers, both with a `failure-safe default {"score": 0.0}`.
+- **Memory is verbatim, not paraphrased.** When Alma "remembers" something, the chunk returned by pgvector is the chunk used in the prompt. The LLM does not get to retell it in its own words. This is the simplest defense against the hallucination class where the model invents a coherent-sounding past that the user never lived.
+- **Proactivity is gated, not unconditional.** Three Redis gates pre-flight every scheduled check-in: slot already sent today, user active in the last two hours, `crisis_score` above 0.6. A user in distress does not receive "¿Ya desayunaste? ☀️" — the silence is intentional, not a bug.
+- **Cloud Scheduler replaced APScheduler in production.** APScheduler dies when Cloud Run scales to zero. For a system whose value proposition is "always reaches out first," silent scheduler death is the worst possible failure. Cloud Scheduler with idempotency via `alma_proactive_log` is the production answer.
+- **Anthropic with Gemini failover, no abstraction layer.** Two providers, one thin router, full visibility into which provider handled which turn. No LangChain, no LiteLLM — abstraction surface to debug under stress is exactly what we did not want.
+- **Eight-repository topology with `CLAUDE.md` at every level.** Every service can be picked up cold by an autonomous agent that has never seen the codebase. The repo structure itself is an artifact of how the system was built: by orchestrated parallel agents, each with focused scope. See [`docs/process/claude-code-skills.md`](docs/process/claude-code-skills.md).
+
+---
+
+## How a single message flows
+
+```mermaid
+sequenceDiagram
+    participant U as User (web/Telegram)
+    participant N as nginx :3000
+    participant A as agent (AlmaChain)
+    participant M as MCP server
+    participant C as Claude Opus 4.7
+
+    U->>N: POST /api/chat (message)
+    N->>A: forward (same-origin)
+    A->>M: evaluate_crisis_risk(user_id, message)
+    M-->>A: {score: 0.12, level: "none"}
+    A->>M: search_memory(user_id, embedding)
+    M-->>A: top-k chunks + similarity scores
+    A->>C: messages.stream(system + memory + msg)
+    C-->>A: SSE token stream
+    A-->>N: SSE relay
+    N-->>U: rendered tokens
+
+    Note over A,M: Post-response work (async, non-blocking)
+    A->>M: write_memory(turn → 4 layers)
+    A->>M: re-evaluate_crisis_risk → Redis cache
+```
+
+For the full set of ten architecture diagrams, see [`diagrams/`](diagrams/).
+
+---
+
 ## 📚 Technical Documentation
 
 For full technical depth — architecture, MCP server, memory system, crisis detection, multi-agent methodology, and 10 architecture diagrams:
@@ -90,13 +145,18 @@ For full technical depth — architecture, MCP server, memory system, crisis det
 
 Direct links to specific topics:
 - [Architecture](docs/technical/architecture.md)
-- [Deployment — GCP Cloud Run + alma-bot.com](docs/technical/deployment.md) 🆕
+- [Deployment — GCP Cloud Run + alma-bot.com](docs/technical/deployment.md)
 - [MCP Server & Memory](docs/technical/mcp-server.md)
 - [Memory System (Postgres + pgvector)](docs/technical/memory-system.md)
 - [Proactivity System](docs/technical/proactivity.md)
 - [Crisis Detection](docs/technical/crisis-detection.md)
 - [Multi-Agent Methodology](docs/process/multi-agent-methodology.md)
 - [10 Architecture Diagrams](diagrams/README.md)
+
+Engineering rigor and project history:
+- [Spec — how Alma hits portfolio review criteria](docs/spec.md)
+- [Evolution — technical decision log](docs/evolution.md)
+- [Hackathon context and post-mortem](docs/HACKATHON.md)
 
 ---
 
@@ -121,12 +181,18 @@ docker compose up --build -d
 ---
 
 <p align="center">
-  <strong>Built for the Anthropic Claude Opus 4.7 Hackathon · 2026</strong><br>
   <em>For the people who never ask first.</em>
 </p>
 
 <p align="center">
-  <a href="https://youtu.be/YKxDqg_PpeI">▶ Watch the demo</a> ·
+  <a href="https://youtu.be/YKxDqg_PpeI">▶ Demo</a> ·
   <a href="DOCUMENTATION.md">📚 Documentation</a> ·
-  <a href="https://github.com/iDeepBrain/claude-hackathon-infra">🚀 Source code</a>
+  <a href="docs/spec.md">📋 Spec</a> ·
+  <a href="docs/evolution.md">📖 Evolution</a> ·
+  <a href="docs/HACKATHON.md">🏆 Hackathon context</a> ·
+  <a href="https://github.com/iDeepBrain/claude-hackathon-infra">🚀 Source</a>
+</p>
+
+<p align="center">
+  <sub>Cite this work — see <a href="CITATION.cff"><code>CITATION.cff</code></a>.</sub>
 </p>

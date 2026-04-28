@@ -1,0 +1,43 @@
+cff-version: 1.2.0
+title: "Alma — A Proactive AI Emotional Companion for Mental Health"
+message: "If you reference Alma in academic, applied, or evaluative work, please cite this repository."
+type: software
+authors:
+  - name: "iDeepBrain Team"
+    website: "https://github.com/iDeepBrain"
+repository-code: "https://github.com/iDeepBrain/claude-hackathon-alma"
+url: "https://alma-bot.com"
+version: "2.0.0"
+date-released: 2026-04-27
+license: MIT
+abstract: >
+  Alma is a proactive AI emotional companion for mental health that takes the
+  first step instead of waiting for the user to open the app. Built on Claude
+  Opus 4.7 with Haiku 4.5 routing and Gemini Pro failover, Alma is deployed on
+  Google Cloud Run with a four-layer semantic memory in Postgres + pgvector
+  (HNSW), deterministic crisis detection with a dual-caller pattern, and three
+  daily Redis-gated proactive check-ins. Bilingual Spanish and English,
+  available on web (https://alma-bot.com) and Telegram. The repository
+  documents the architecture, decision log, and post-hackathon evolution.
+keywords:
+  - mental health
+  - companion AI
+  - proactive AI
+  - Claude
+  - Anthropic
+  - pgvector
+  - HNSW
+  - crisis detection
+  - Cloud Run
+  - multi-agent
+  - emotional support
+references:
+  - type: software
+    title: "Medkit — top-1 Claude Opus 4.7 Hackathon"
+    repository-code: "https://github.com/bedriyan/medkit-app"
+  - type: software
+    title: "Wrench-board — top-2 Claude Opus 4.7 Hackathon"
+    repository-code: "https://github.com/Junkz3/wrench-board"
+  - type: software
+    title: "Maieutic — top-3 Claude Opus 4.7 Hackathon"
+    repository-code: "https://github.com/pauvasquezh/maieutic"
