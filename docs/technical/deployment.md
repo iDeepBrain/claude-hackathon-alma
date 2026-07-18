@@ -7,7 +7,7 @@ Alma runs on **Google Cloud Run** with a custom domain at [`alma-bot.com`](https
 ## Live URL
 
 - 🌸 **Public**: [https://alma-bot.com](https://alma-bot.com)
-- ⚙️ **Cloud Run direct (dev)**: `https://alma-web-dev-630531001367.us-central1.run.app/`
+- ⚙️ **Cloud Run direct (dev)**: `https://alma-web-dev-<project-hash>-uc.a.run.app/`
 
 ---
 

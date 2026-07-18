@@ -49,7 +49,7 @@ Pre-condition: the demo seed endpoint has been called for
 
 ```bash
 curl -X POST 'http://localhost:8080/api/v1/demo/seed?user_id=mateo_clean' \
-  -H 'X-Demo-Token: devtoken123'
+  -H "X-Demo-Token: $DEMO_SEED_TOKEN"
 # → { layers: { mood_history: 7, mentioned_events: 4, habits: 3, interaction_prefs: 4 } }
 ```
 

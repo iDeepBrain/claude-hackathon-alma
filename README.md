@@ -196,3 +196,7 @@ docker compose up --build -d
 <p align="center">
   <sub>Cite this work — see <a href="CITATION.cff"><code>CITATION.cff</code></a>.</sub>
 </p>
+
+---
+
+Built by [Cristian Lazo Quispe](https://github.com/CristianLazoQuispe). Licensed under MIT (© iDeepBrain).
