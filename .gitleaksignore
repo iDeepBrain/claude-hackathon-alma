@@ -1,7 +1,7 @@
 # gitleaks allowlist — reviewed findings that are NOT real secrets.
-# 44a747e287503f18a35c0ec4e4cce5952f45a10c:docs/process/qa-protocol.md:curl-auth-header:51
+# 8bc94d7571e42ee4195b47ee6b95e39712d81185:docs/process/qa-protocol.md:curl-auth-header:51
 # docs/process/qa-protocol.md — 'devtoken123' is a placeholder value used in a
 # documentation example (curl snippet), never a real credential. Confirmed it
 # appears nowhere else in the codebase or any .env. Working tree now uses the
 # $DEMO_SEED_TOKEN env var instead.
-44a747e287503f18a35c0ec4e4cce5952f45a10c:docs/process/qa-protocol.md:curl-auth-header:51
+8bc94d7571e42ee4195b47ee6b95e39712d81185:docs/process/qa-protocol.md:curl-auth-header:51
