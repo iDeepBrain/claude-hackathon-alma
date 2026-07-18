@@ -1,0 +1,34 @@
+{
+  "name": "alma-suite",
+  "displayName": "ALMA Companion Suite",
+  "version": "1.0.0",
+  "description": "Skills for working on the ALMA proactive emotional companion: run the crisis-detection eval, audit polluted memory layers, and A/B test prompt revisions side-by-side.",
+  "author": {
+    "name": "iDeepBrain",
+    "url": "https://github.com/iDeepBrain"
+  },
+  "homepage": "https://alma-bot.com",
+  "repository": "https://github.com/iDeepBrain/claude-hackathon-alma",
+  "license": "MIT",
+  "keywords": [
+    "mental-health",
+    "companion",
+    "claude-opus-4-7",
+    "crisis-detection",
+    "alma"
+  ],
+  "skills": [
+    {
+      "name": "alma-crisis-eval",
+      "path": "skills/alma-crisis-eval"
+    },
+    {
+      "name": "alma-memory-curator",
+      "path": "skills/alma-memory-curator"
+    },
+    {
+      "name": "alma-prompt-tuner",
+      "path": "skills/alma-prompt-tuner"
+    }
+  ]
+}
