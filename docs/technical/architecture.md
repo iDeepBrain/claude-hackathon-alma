@@ -245,10 +245,10 @@ The agent holds `TELEGRAM_BOT_TOKEN` specifically to enable this. The telegram-b
 | Proactivity slot flags | Redis string | End of day | Reset daily at midnight Lima time |
 | Proactivity timestamps | Redis string | None | Overwritten on each send |
 | Crisis scores | Redis string | 24 hours | Overwritten on each message evaluation |
-| Mood history | SQLite (MCP) | Permanent | One row per user per day |
-| Mentioned events | SQLite (MCP) | Permanent | Append-only with update support |
-| Habits | SQLite (MCP) | Permanent | Upsert by habit type |
-| Interaction prefs | SQLite (MCP) | Permanent | Upsert by preference key |
+| Mood history | Postgres/pgvector (MCP) | Permanent | One row per user per day |
+| Mentioned events | Postgres/pgvector (MCP) | Permanent | Append-only with update support |
+| Habits | Postgres/pgvector (MCP) | Permanent | Upsert by habit type |
+| Interaction prefs | Postgres/pgvector (MCP) | Permanent | Upsert by preference key |
 
 ---
 
@@ -276,7 +276,7 @@ PROACTIVE_SILENCE_WINDOW_H=2          # Silence gate window (hours)
 ### mcp
 
 ```env
-DATABASE_URL=sqlite:///./alma.db      # SQLite database path
+DATABASE_URL=postgresql://alma:***@postgres:5432/alma  # Postgres + pgvector (local container; Supabase in prod)
 EMBEDDING_MODEL=all-MiniLM-L6-v2     # fastembed model name
 SIMILARITY_THRESHOLD=0.5              # Memory search cosine threshold
 ```

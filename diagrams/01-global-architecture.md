@@ -32,7 +32,7 @@ graph TB
         end
 
         subgraph MCP["mcp — FastMCP :8001"]
-            TOOLS["5 MCP Tools"]
+            TOOLS["6 MCP Tools"]
             EMB["fastembed ONNX<br>all-MiniLM-L6-v2 (384-dim)"]
         end
 

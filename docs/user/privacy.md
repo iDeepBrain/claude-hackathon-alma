@@ -13,7 +13,7 @@ Alma stores four types of information to provide continuity across conversations
 
 ## Where Your Data Lives
 
-- All data is stored in a **local SQLite database** (`alma.db`) on the server running Alma
+- Persistent memory is stored in a **PostgreSQL database with `pgvector`** — a local `pgvector` container in development, and **Supabase Postgres** in production
 - Your conversation history is stored in **Redis** with a 24-hour expiration
 - Memory embeddings are computed **locally** using ONNX — your messages are never sent to a third-party embedding service
 - Conversations with Claude (Anthropic) are subject to [Anthropic's privacy policy](https://www.anthropic.com/privacy)
@@ -32,12 +32,12 @@ Alma stores four types of information to provide continuity across conversations
 |-----------|-----------|----------|
 | Conversation history | 24 hours | Redis |
 | Semantic cache | 1 hour | Redis |
-| Memory layers | Permanent | SQLite |
+| Memory layers | Permanent | Postgres + pgvector |
 | Crisis scores | 24 hours | Redis |
 
 ## Deleting Your Data
 
-Contact the administrator to request deletion of your memory entries from the SQLite database. Redis data expires automatically based on the TTLs above.
+Contact the administrator to request deletion of your memory entries from the Postgres (pgvector) database. Redis data expires automatically based on the TTLs above.
 
 ## Crisis Data
 

@@ -94,6 +94,19 @@ Builds a human-readable markdown string for injection into the LLM system prompt
 
 This is a safety-first architectural decision. The LLM is used for empathetic conversation; crisis escalation is handled by a deterministic system.
 
+### `link_anonymous_to_account_tool`
+Merges the memory of an anonymous session into a signed-in account. When a web user starts chatting anonymously (`web UUID` namespace) and later signs in, this tool re-points their accumulated memory rows to the account `user_id` so continuity is preserved across the sign-in boundary.
+
+```python
+# Input
+{"anonymous_user_id": "web_<uuid>", "account_user_id": "acct_<id>"}
+
+# Output
+{"migrated_rows": 12, "layers": ["mood_history", "mentioned_events", "habits", "interaction_prefs"]}
+```
+
+This is what makes the "try it anonymously, keep your history when you sign up" flow possible without losing a single remembered fact.
+
 ---
 
 ## 4-Layer Memory Model
@@ -258,7 +271,7 @@ The v1 design used SQLite (`alma.db`) with embeddings stored as `BLOB` columns. 
 | Caller | When | Purpose |
 |--------|------|---------|
 | AlmaChain (`chain.py`) | After every user message, async non-blocking | Update `alma:proactive:crisis_score:{user_id}` in Redis |
-| APScheduler (in agent) | Before every scheduled proactive check-in | Read score; suppress message if `> 0.6` |
+| Scheduler (APScheduler local / Cloud Scheduler prod) | Before every scheduled proactive check-in | Read score; suppress message if `> 0.6` |
 
 Before the scheduler sends any check-in (breakfast, lunch, or dinner), it reads the user's last known crisis score:
 

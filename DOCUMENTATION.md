@@ -57,15 +57,16 @@ Cache lives in Redis with 1h TTL. Embeddings via `fastembed` + ONNX (local).
 
 Alma remembers. Every conversation enriches a persistent memory that is injected into Claude's system prompt on every turn.
 
-### 5 MCP Tools
+### 6 MCP Tools
 
 | Tool | Description |
 |------|-------------|
 | `get_memory` | Retrieve all 4 memory layers for a user |
 | `upsert_memory` | Write or update a memory entry (idempotent by `entry_key`) |
-| `search_memory` | Semantic search across all layers (cosine, threshold 0.5) |
+| `search_memories` | Semantic search across all layers (cosine, threshold 0.5) |
 | `build_context` | Generate markdown for system prompt injection |
 | `evaluate_crisis_risk` | Deterministic crisis score 0-1 (no LLM) |
+| `link_anonymous_to_account` | Merge anonymous-session memory into a signed-in account |
 
 ### 4-Layer Memory
 
@@ -76,7 +77,7 @@ Alma remembers. Every conversation enriches a persistent memory that is injected
 | `habits` | Behavioral patterns: sleep, exercise, eating, social |
 | `interaction_prefs` | Communication style preferences |
 
-**Storage:** SQLite (`alma.db`) + fastembed ONNX (`all-MiniLM-L6-v2`) — local inference, no external API calls.
+**Storage:** SQLite (local dev) → Postgres + pgvector (production, Supabase) + fastembed ONNX (`all-MiniLM-L6-v2`) — local embedding inference, no external API calls.
 
 > **Deep dive:** [MCP Server](docs/technical/mcp-server.md) · [Memory System](docs/technical/memory-system.md) · [Crisis Detection](docs/technical/crisis-detection.md)
 
@@ -143,16 +144,17 @@ Before a single line of production code was written, **12 specialized Claude Cod
 
 ```
 Browser → nginx:3000 → /api/* → agent:8000 → redis:6379
-                                            → mcp:8001 → SQLite
+                                            → mcp:8001 → Postgres + pgvector
 Telegram → telegram-bot → agent:8000
-APScheduler (inside agent) → httpx → api.telegram.org
+Scheduler → httpx → api.telegram.org   (APScheduler local · Cloud Scheduler prod)
 ```
 
 | Service | Image | Role |
 |---------|-------|------|
 | `redis` | redis:7-alpine | Sessions, semantic cache, proactivity keys |
-| `mcp` | custom | FastMCP server, SQLite, fastembed ONNX |
-| `agent` | custom | FastAPI, AlmaChain, APScheduler |
+| `postgres` | pgvector/pg16 | 4-layer memory, HNSW semantic search (Supabase in prod) |
+| `mcp` | custom | FastMCP server, Postgres + pgvector, fastembed ONNX |
+| `agent` | custom | FastAPI, AlmaChain, scheduler (APScheduler local / Cloud Scheduler prod) |
 | `telegram-bot` | custom | Telegram polling, chat_id registration |
 | `web` | nginx:1.25-alpine | Static files + `/api/*` reverse proxy |
 
@@ -166,8 +168,8 @@ APScheduler (inside agent) → httpx → api.telegram.org
 
 | Document | What it covers |
 |----------|---------------|
-| [Architecture](docs/technical/architecture.md) | 5-service system, request flows, env vars, security |
-| [MCP Server](docs/technical/mcp-server.md) | 5 tools, 4-layer memory, SQLite schema, embeddings |
+| [Architecture](docs/technical/architecture.md) | 6-container system, request flows, env vars, security |
+| [MCP Server](docs/technical/mcp-server.md) | 6 tools, 4-layer memory, Postgres + pgvector schema, embeddings |
 | [Memory System](docs/technical/memory-system.md) | Memory write/read flows, semantic search |
 | [Crisis Detection](docs/technical/crisis-detection.md) | Deterministic scoring, escalation path, proactivity gate |
 | [Proactivity](docs/technical/proactivity.md) | APScheduler, Redis keys, safety gates, delivery |
@@ -199,7 +201,7 @@ git clone https://github.com/iDeepBrain/claude-hackathon-infra
 cd claude-hackathon-infra
 cp .env.example .env          # fill in ANTHROPIC_API_KEY and TELEGRAM_BOT_TOKEN
 docker compose up --build -d
-docker ps                     # should show 5 containers
+docker ps                     # should show 6 containers
 ```
 
 - Web chat: `http://localhost:3000`
@@ -211,9 +213,9 @@ docker ps                     # should show 5 containers
 
 | Repository | Role | Runtime |
 |-----------|------|---------|
-| [`claude-hackathon-infra`](https://github.com/iDeepBrain/claude-hackathon-infra) | Docker Compose orchestrator (5 services) | Start here |
+| [`claude-hackathon-infra`](https://github.com/iDeepBrain/claude-hackathon-infra) | Docker Compose orchestrator (6 containers) | Start here |
 | [`claude-hackathon-agent`](https://github.com/iDeepBrain/claude-hackathon-agent) | FastAPI + AlmaChain + APScheduler | `agent` service |
-| [`claude-hackathon-mcp`](https://github.com/iDeepBrain/claude-hackathon-mcp) | FastMCP memory server (SQLite + embeddings) | `mcp` service |
+| [`claude-hackathon-mcp`](https://github.com/iDeepBrain/claude-hackathon-mcp) | FastMCP memory server (Postgres + pgvector + embeddings) | `mcp` service |
 | [`claude-hackathon-telegram`](https://github.com/iDeepBrain/claude-hackathon-telegram) | Telegram bot (polling) | `telegram-bot` service |
 | [`claude-hackathon-web`](https://github.com/iDeepBrain/claude-hackathon-web) | Frontend HTML/JS + nginx | `web` service |
 | [`claude-hackathon-alma`](https://github.com/iDeepBrain/claude-hackathon-alma) | Public documentation (this repo) | Docs only |

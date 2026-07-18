@@ -24,6 +24,13 @@
   <em>Live on Google Cloud Run · Bilingual ES/EN · No signup required</em>
 </p>
 
+<p align="center">
+  <a href="https://alma-bot.com/"><img src="https://img.shields.io/badge/live-alma--bot.com-9d6b53?labelColor=2b1f1c" alt="Live demo — alma-bot.com"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-blue" alt="License: MIT"></a>
+  <img src="https://img.shields.io/badge/Built%20with-Claude%20%2B%20Gemini-6b4f9d" alt="Built with Claude + Gemini">
+  <img src="https://img.shields.io/badge/Google%20Cloud%20Run-deployed-4285F4?logo=googlecloud&logoColor=white" alt="Deployed on Google Cloud Run">
+</p>
+
 ---
 
 ## The Number That Started Everything
@@ -82,6 +89,78 @@ Because the people who need help the most... are never the ones who ask first.
 
 ---
 
+## Architecture
+
+One FastAPI orchestrator — **AlmaChain** — sits at the center. The browser and Telegram reach it through thin edges; memory, cache, and state hang off it; and the LLM layer is an env-configurable **failover chain**, not a single hardwired provider. The same six containers run locally under Docker Compose and in production as managed Cloud Run services.
+
+```mermaid
+graph LR
+    subgraph clients["Clients"]
+        WEB_U["Web browser"]
+        TG_U["Telegram"]
+    end
+
+    subgraph containers["Six containers · Docker (local) / Cloud Run (prod)"]
+        WEB["web<br/>nginx — static + reverse-proxy"]
+        AGENT["agent<br/>FastAPI · AlmaChain orchestrator"]
+        MCP["mcp<br/>FastMCP · alma-memory (6 tools)"]
+        REDIS["redis<br/>sessions · semantic cache · gates"]
+        PG["postgres<br/>pgvector · 4-layer memory"]
+        TG["telegram-bot"]
+    end
+
+    subgraph llm["LLM failover chain (env-configurable)"]
+        GEM["PRIMARY · Gemini 2.5 flash / flash-lite<br/>(currently live, free tier)"]
+        CLAUDE["FALLBACK · Claude Haiku / Opus"]
+    end
+
+    subgraph cloud["Managed cloud (production)"]
+        SUPA["Supabase Postgres + pgvector"]
+        UPS["Upstash Redis"]
+        SCHED["Cloud Scheduler<br/>proactive check-ins"]
+    end
+
+    WEB_U --> WEB
+    TG_U --> TG
+    WEB -->|"/api/*"| AGENT
+    TG --> AGENT
+    AGENT --> MCP
+    AGENT --> REDIS
+    MCP --> PG
+    AGENT --> GEM
+    GEM -.->|"on error"| CLAUDE
+    SCHED -.->|"POST /cron/proactive/{slot}"| AGENT
+
+    PG -.->|"prod"| SUPA
+    REDIS -.->|"prod"| UPS
+
+    style AGENT fill:#e8f4e8,stroke:#2d7a2d
+    style MCP fill:#fff3e0,stroke:#e65100
+    style PG fill:#fff3e0,stroke:#e65100
+    style GEM fill:#ede7f6,stroke:#5e35b1
+```
+
+- **LLM layer** — a thin router failing over between providers, configured entirely through `LLM_*` env vars. Gemini 2.5 flash / flash-lite is currently live on the free tier as **primary**; Claude Haiku / Opus is the **fallback**. No LangChain-style abstraction layer sits between the agent and either provider.
+- **Managed cloud** — Google Cloud Run runs every service with **scale-to-zero** (`min-instances=0`); Supabase provides Postgres + pgvector, Upstash provides Redis, and Cloud Scheduler fires the proactive check-ins that in-process schedulers cannot survive under scale-to-zero.
+- **Memory** — the `alma-memory` MCP server exposes **6 tools** over a **4-layer memory** model (`mood_history`, `mentioned_events`, `habits`, `interaction_prefs`), with semantic search over pgvector.
+
+---
+
+## The System — 6 Repositories
+
+Alma is not a monolith. It is a small fleet of focused services, each its own repository with a `CLAUDE.md` so an autonomous agent can pick it up cold.
+
+| Repository | What it is |
+|---|---|
+| [`alma`](https://github.com/iDeepBrain/claude-hackathon-alma) | Documentation & architecture hub (this repo): diagrams, technical docs, research framing. |
+| [`agent`](https://github.com/iDeepBrain/claude-hackathon-agent) | The AlmaChain orchestrator: FastAPI + SSE pipeline (crisis pre-check → guards → semantic cache → MCP memory → LLM stream → async post-response). |
+| [`mcp`](https://github.com/iDeepBrain/claude-hackathon-mcp) | FastMCP memory server: 4-layer memory, semantic search (fastembed + pgvector), deterministic crisis detection (6 MCP tools). |
+| [`web`](https://github.com/iDeepBrain/claude-hackathon-web) | Frontend & live demo ([alma-bot.com](https://alma-bot.com)): vanilla JS, nginx, bilingual ES/EN. |
+| [`telegram`](https://github.com/iDeepBrain/claude-hackathon-telegram) | Telegram bot bridge to the agent backend. |
+| [`infra`](https://github.com/iDeepBrain/claude-hackathon-infra) | Docker Compose + Cloud Run deployment (scale-to-zero, Secret Manager, bearer-token proxy). |
+
+---
+
 ## Why Claude Opus 4.7 Specifically
 
 | Capability | How Alma uses it | What breaks without it |
@@ -134,6 +213,33 @@ sequenceDiagram
 ```
 
 For the full set of ten architecture diagrams, see [`diagrams/`](diagrams/).
+
+---
+
+## Screenshots
+
+<table>
+  <tr>
+    <td width="50%" valign="top">
+      <img src="assets/screenshot-landing.png" alt="Alma landing page" width="100%"><br>
+      <sub><strong>Landing</strong> — bilingual, no signup required.</sub>
+    </td>
+    <td width="50%" valign="top">
+      <img src="assets/screenshot-chat-memory.png" alt="Live chat with the memory panel" width="100%"><br>
+      <sub><strong>Live chat with the memory panel</strong> — the 4-layer memory loads and updates as you talk.</sub>
+    </td>
+  </tr>
+  <tr>
+    <td width="50%" valign="top">
+      <img src="assets/screenshot-mirror.png" alt="The mirror screen — Alma reflects back" width="100%"><br>
+      <sub><strong>The "mirror"</strong> — Alma reflects back what she has remembered about you.</sub>
+    </td>
+    <td width="50%" valign="top">
+      <img src="assets/screenshot-crisis.png" alt="Crisis modal with LatAm hotlines" width="100%"><br>
+      <sub><strong>Deterministic crisis detection → LatAm hotlines</strong> — keyword-scored, not an LLM guess.</sub>
+    </td>
+  </tr>
+</table>
 
 ---
 
