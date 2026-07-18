@@ -1,6 +1,6 @@
 # MCP Memory System
 
-This diagram details the internals of the FastMCP semantic memory server (`claude-hackathon-mcp`). It exposes 5 tools over streamable HTTP, stores data in a 4-layer memory model (mood_history, mentioned_events, habits, interaction_prefs) backed by **Postgres + pgvector**, and provides semantic search using fastembed ONNX embeddings (all-MiniLM-L6-v2, 384 dimensions) with an HNSW index for `O(log n)` retrieval. The `build_context_tool` composes all layers into a markdown string injected into the LLM system prompt, giving Alma persistent knowledge about each user.
+This diagram details the internals of the FastMCP semantic memory server (`claude-hackathon-mcp`, exposed as `alma-memory`). It exposes 6 tools over streamable HTTP, stores data in a 4-layer memory model (mood_history, mentioned_events, habits, interaction_prefs) backed by **Postgres + pgvector**, and provides semantic search using fastembed ONNX embeddings (all-MiniLM-L6-v2, 384 dimensions) with an HNSW index for `O(log n)` retrieval. The `build_context_tool` composes all layers into a markdown string injected into the LLM system prompt, giving Alma persistent knowledge about each user.
 
 > **v1 → v2 migration:** Originally backed by SQLite (`alma.db` with `BLOB` embeddings + Python in-memory cosine). Migrated to Postgres + pgvector to make the MCP stateless and Cloud-Run-friendly. See [Deployment](../docs/technical/deployment.md) for the migration story.
 
@@ -15,6 +15,7 @@ graph TD
             T3["upsert_memory_tool<br>user_id + layer + data<br>→ idempotent (UNIQUE)"]
             T4["build_context_tool<br>user_id → markdown string<br>(injected into system prompt)"]
             T5["evaluate_crisis_risk_tool<br>message → score 0-1<br>(deterministic, no LLM)"]
+            T6["link_anonymous_to_account_tool<br>anon_id + account_id<br>→ merge memory on sign-in"]
         end
 
         subgraph LAYERS["4-Layer Memory Model"]
@@ -60,6 +61,7 @@ graph TD
     T2 --> QRY
     QRY --> IDX2
     T4 --> T1
+    T6 -->|"UPDATE user_id (anon → account)"| SCHEMA
     SCHEMA --> EMB
 
     style MCP fill:#fff3e0,stroke:#e65100

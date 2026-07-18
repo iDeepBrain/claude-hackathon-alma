@@ -11,11 +11,11 @@ claude-hackathon-alma/
 ├── LICENSE
 ├── docs/
 │   ├── technical/                      # System architecture & implementation
-│   │   ├── architecture.md             # 5-service system, request flows, env vars
-│   │   ├── mcp-server.md             # FastMCP: 5 tools, 4-layer memory, SQLite
+│   │   ├── architecture.md             # 6-container system, request flows, env vars
+│   │   ├── mcp-server.md             # FastMCP: 6 tools, 4-layer memory, Postgres + pgvector
 │   │   ├── memory-system.md          # Memory write/read/search flows
 │   │   ├── crisis-detection.md       # Deterministic safety, proactivity gate
-│   │   └── proactivity.md            # 3 daily check-ins, APScheduler, gates
+│   │   └── proactivity.md            # 3 daily check-ins, APScheduler (local) / Cloud Scheduler (prod), gates
 │   ├── user/                          # End-user documentation
 │   │   ├── getting-started.md        # How to use Alma on Telegram & web
 │   │   └── privacy.md               # Data storage, retention, deletion
